@@ -1,12 +1,7 @@
 
 function d3Test(){
 	var chartId = "chart1";
-	var svgPadding = {
-		top: 20,
-		right: 20,
-		bottom: 20,
-		left: 40
-	};
+
 	var svgMargin = {
 		top: 20,
 		right: 20,
@@ -14,13 +9,10 @@ function d3Test(){
 		left: 50
 	};
 
-
 	var svgWidth = parseInt($("#"+ chartId).css("width"), 10) - (svgMargin.left + svgMargin.right);
 	var svgHeight = parseInt($("#"+ chartId).css("height"), 10) - (svgMargin.top + svgMargin.bottom);
 	console.log("svgWidth: "+ svgWidth+" svgHeight: "+ svgHeight);
 	var parseDate = d3.time.format("%d-%b-%y").parse;
-
-
 
 	//create svg
 	var svgObj = d3.select("#"+chartId)
@@ -110,7 +102,7 @@ function d3Test(){
 				//console.log(i+"/"+d.date.getTime()+"/"+ d.duration);
 				var dateTemp = new Date(d.date.getTime());
 				dateTemp.setSeconds(dateTemp.getSeconds()+ d.duration);
-				console.log("data x2: "+ xScale(dateTemp))
+				//console.log("data x2: "+ xScale(dateTemp))
 				return xScale(dateTemp);
 			})
 			.attr("y2", function(d){
@@ -209,24 +201,191 @@ function d3Test(){
 
 }
 
-function d3Test2(){
+function d3Test2(){	
+	var chartId = "chart2";
+	var svgMargin =  {
+		top: 20,
+		right: 20,
+		bottom: 20,
+		left: 20,
+	};
+	var svgObj = graphD3Obj.graphSvgCreate(chartId, svgMargin);
+	
 	var url = "./getData.json";
 	d3.json(url, function(error, jsonData){
-		var rsList = JSON.parse(jsonData.rsList);
+		console.log(jsonData)
+		var rsList = jsonData;//JSON.parse(jsonData);
 		var hits = rsList.hits;
 		var total = hits.total;
 		console.log("total: "+ total)
 		var hitsOfHits = hits.hits;
+		var dataLength = hitsOfHits.length;
+		console.log("data count "+dataLength);
 		
+		var dataSet = [];
 		var format = d3.time.format("%Y%m%d%H%M%S");
-		console.log(format.parse("2011-01-01"));
+		var format2 = d3.time.format("%Y-%m-%d %H:%M:%S");
 		$.each(hitsOfHits, function(i){
 			var data = hitsOfHits[i];
 			var _source = data._source;
 			var report_time  = _source.report_time;
 			var duration = _source.duration;
-			console.log(report_time+"/"+format.parse(report_time)+"/"+ duration)
+			console.log(report_time)
+			
+			var reportTimeStart = new Date(format.parse(report_time).getTime());
+			var reportTimeEnd = new Date(format.parse(report_time).getTime());
+			reportTimeEnd.setSeconds(reportTimeEnd.getSeconds()+duration);
+	
+			var yValue = Math.floor((Math.random())*dataLength)+1;
+			console.log(yValue+" ####: "+ format2(reportTimeStart)+"/duration: "+duration+"==>"+ format2(reportTimeEnd));
+		//	console.log(i+"/"+report_time+"/"+format.parse(report_time)+"/"+ duration+"/"+ yValue)
+			var item = {"reportTimeStart":reportTimeStart, "reportTimeEnd": reportTimeEnd, "duration":duration, "yValue":yValue};
+			dataSet.push(item);
 		})
+
+		graphD3Obj.xScaleSet(dataSet, "reportTimeStart", "reportTimeEnd");
+		graphD3Obj.yScaleSet(0, dataLength);
+		
+		
+		svgObj.append("g").selectAll("line")
+		.data(dataSet)
+		.enter()
+		.append("line")
+		.attr("x1", function(d){
+			//console.log(d)
+			return graphD3Obj.xScale(d.reportTimeStart);
+		})
+		.attr("y1", function(d){
+			return graphD3Obj.yScale(d.yValue);
+		})
+		.attr("x2",  function(d, i){
+			return graphD3Obj.xScale(d.reportTimeEnd);
+		})
+		.attr("y2", function(d){
+			return graphD3Obj.yScale(d.yValue);
+		})
+		.attr("stroke-width", 1)
+		.attr("stroke", "black")
+
+		
+		var dataMin = d3.min(dataSet, function(d){
+			return d["reportTimeStart"];
+		});
+		
+		var dataMax = d3.max(dataSet, function(d){
+			return d["reportTimeEnd"];
+		});
+		
+		//x1 막대
+		svgObj.append("g").selectAll("rect")
+			.data(dataSet)
+			.enter()
+			.append("rect")
+			.attr("x" , function(d){
+				console.log(graphD3Obj.xScale(d.reportTimeStart)+"**"+graphD3Obj.xScale(dataMin))
+				 
+				
+				return graphD3Obj.xScale(d.reportTimeStart);
+			})
+			.attr("y" , function(d){
+				return graphD3Obj.yScale(d.yValue)-5;
+			})
+			.attr("width" , function(d) {
+				return 1;
+			})
+			.attr("height" , function(d) {
+				return 10;
+			});
+		
+		//x2 막대기 
+		svgObj.append("g").selectAll("rect")
+			.data(dataSet)
+			.enter()
+			.append("rect")
+			.attr("x" , function(d){
+				return graphD3Obj.xScale(d.reportTimeEnd);
+			})
+			.attr("y" , function(d){
+				return graphD3Obj.yScale(d.yValue)-5;
+			})
+			.attr("width" , function(d) {
+				return 1;
+			})
+			.attr("height" , function(d) {
+				return 10;
+			})
+		
+			
+		var temp = d3.time.format("%Y-%m-%d %H:%M");
+		
+		var customTimeFormat = d3.time.format.multi([
+		                                             [".%L", function(d) { return d.getMilliseconds(); }],
+		                                             [":%S", function(d) { return d.getSeconds(); }],
+		                                             ["%I:%M", function(d) { return d.getMinutes(); }],
+		                                             ["%I %p", function(d) { return d.getHours(); }],
+		                                             ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
+		                                             ["%b %d", function(d) { return d.getDate() != 1; }],
+		                                             ["%B", function(d) { return d.getMonth(); }],
+		                                             ["%Y", function() { return true; }]
+		                                           ]); 
+		
+		var xAxis = d3.svg.axis()
+					.scale(graphD3Obj.xScale)
+					.orient("bottom")
+					//.ticks(d3.time.hour, 4)
+					//.tickSize(-graphD3Obj.svgHeight, 0, 0)
+					 //.tickFormat(customTimeFormat);
+		
+		var yAxis = d3.svg.axis()
+					.scale(graphD3Obj.yScale)
+					.orient("left");
+		
+		//console.log("/"+ graphD3Obj.svgWidth+"/"+ graphD3Obj.svgHeight)
+		
+		//x축 label text
+		svgObj.append("g")
+			.attr("class", "x axis")
+			.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
+			.call(xAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("x", graphD3Obj.svgWidth)
+			.attr("y", -20)
+			.style("text-anchor", "end")
+			.text("duration");
+		
+		//y축 label text
+//		svgObj.append("g")
+//			.attr("class", "y axis")
+//			.call(yAxis)
+//			.append("text")
+//			.attr("class", "label")
+//			.attr("transform", "rotate(-90)")
+//			.attr("x", 0)
+//			.attr("y", 15)
+//			//.attr("dy", ".71em")
+//			.style("text-anchor", "end")
+//			.text("testttt")
+
+	
+		
+			
+		//x축 GRID	
+		svgObj.append("g")
+				.attr("class", "grid")
+				.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
+				.call(d3.svg.axis()
+				.scale(graphD3Obj.xScale)
+				.orient("bottom")
+				.tickSize(-graphD3Obj.svgHeight, 0, 0)
+//				
+//				
+//				
+//				//.ticks(10)
+				.tickFormat("")
+		)
+		
+		
 	})
 }
 

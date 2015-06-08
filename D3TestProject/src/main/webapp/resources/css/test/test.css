@@ -13,7 +13,7 @@ svg{
 .axis line{
 
 	fill:none;
-	stroke:black;
+	stroke:pink;
 	shape-rendering: crispEdges;
 }
 .axis text{
