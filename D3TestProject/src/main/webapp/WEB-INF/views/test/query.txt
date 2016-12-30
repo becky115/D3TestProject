@@ -19,4 +19,24 @@ GET /connectome-20150601,connectome-20150602,connectome-20150603,connectome-2015
 
 
 
+GET /connectome-20150601,connectome-20150602,connectome-20150603,connectome-20150604,connectome-20150605,connectome-20150606,connectome-20150607/_search?
+{
+  "from" : 0,
+  "size" : 0,
+  "post_filter" : {
+    "query" : {
+      "query_string" : {
+        "query" : "log_type_Name:conn.log AND dst_asname:\"unknown-0\" AND dst_ip:\"172.16.1.240\" AND src_ip:\"192.168.1.100\""
+      }
+    }
+  },
+  "sort" : [ {
+    "report_time" : {
+      "order" : "desc"
+    }
+  } ]
+}
+
+
+
 http://172.16.100.102:9200/_plugin/marvel/sense/index.html

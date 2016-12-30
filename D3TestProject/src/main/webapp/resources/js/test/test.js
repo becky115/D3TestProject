@@ -1,226 +1,74 @@
-
-function d3Test(){
-	var chartId = "chart1";
-
-	var svgMargin = {
-		top: 20,
-		right: 20,
-		bottom: 30,
-		left: 50
-	};
-
-	var svgWidth = parseInt($("#"+ chartId).css("width"), 10) - (svgMargin.left + svgMargin.right);
-	var svgHeight = parseInt($("#"+ chartId).css("height"), 10) - (svgMargin.top + svgMargin.bottom);
-	console.log("svgWidth: "+ svgWidth+" svgHeight: "+ svgHeight);
-	var parseDate = d3.time.format("%d-%b-%y").parse;
-
-	//create svg
-	var svgObj = d3.select("#"+chartId)
-			.append("svg")
-			.attr("width", svgWidth + (svgMargin.left + svgMargin.right))
-			.attr("height", svgHeight + (svgMargin.top + svgMargin.bottom))
-			.append("g")
-			.attr("transform", "translate(" + svgMargin.left + "," + svgMargin.top + ")");
-
-	//data call
-	var dataSet = [
-					{"key": 0, "duration":60, "date":new Date("2015-04-27 10:30:00"), "ip":"127.0.0.1" },//src_ip?:y
-					{"key": 1, "duration":120, "date":new Date("2015-04-27 10:33:05"), "ip":"168.2.0.1" },
-					{"key": 2, "duration":50, "date":new Date("2015-04-27 10:35:07"), "ip":"227.0.0.1" },
-					{"key": 3, "duration":20, "date":new Date("2015-04-27 10:40:05"), "ip":"225.3.0.1" }
-				];
-	var yMinValue = d3.min(dataSet, function(d){
-		return d.duration;
-	});
-	var yMaxValue = d3.max(dataSet, function(d){
-			return d.duration;
-	});
-	console.log("yMinValue: "+ yMinValue+ " yMaxValue: "+ yMaxValue)
-
-	//일반 //.scale.linear()
-	//시간 //.time.scale()
-	//x scale
-	var xScale = d3.time.scale()
-			.domain(d3.extent(dataSet, function(d){return d.date})) //[dataSet[0].date, dataSet[dataSet.length-1].date]
-			.rangeRound([0, svgWidth]); // 확인... []
-
-	//y scale
-	var yScale = d3.scale.linear()//d3.scale.ordinal()
-			.domain([ 0, yMaxValue ])//yMinValue
-			.rangeRound([svgHeight, 0]);
-
-
-	//console.log("xScale: "+ xScale(new Date("2015-04-27 10:32:00")))
-	if(isNaN(xScale(new Date("2015-04-27 10:30:00")))){
-		console.log("xCale is NaN: ");
-		return;
-	}
-
-
-
-	//x축  시간
-	var xAxis = d3.svg.axis()
-			.scale(xScale)
-			.orient("bottom")
-			.ticks(d3.time.minute)
-			//.tickFormat(d3.time.format('%s')) -->확인
-			//.ticks(5);//구분자
-	//y축 duration
-	var yAxis = d3.svg.axis()
-			.scale(yScale)
-			.orient("left")
-
-
-
-	svgObj.append("g")
-			.attr("class", "x axis")
-			.attr("transform", "translate(0," +(svgHeight) + ")")
-			.call(xAxis)
-
-	svgObj.append("g")
-			.attr("class", "y axis")
-			.attr("transform", "translate("+0+",0)")//"+(-svgPadding.bottom)+
-			.call(yAxis)
-
-
-	//set Data
-	//1.data()
-
-	svgObj.append("g").selectAll("line")
-			.data(dataSet)
-			.enter()
-			.append("line")
-			.attr("x1", function(d){
-				//console.log(d)
-				return xScale(d.date);
-			})
-			.attr("y1", function(d){
-				return yScale(d.duration);
-			})
-			.attr("x2",  function(d, i){
-				//console.log(i+"/"+d.date);
-				//console.log(i+"/"+d.date.getTime()+"/"+ d.duration);
-				var dateTemp = new Date(d.date.getTime());
-				dateTemp.setSeconds(dateTemp.getSeconds()+ d.duration);
-				//console.log("data x2: "+ xScale(dateTemp))
-				return xScale(dateTemp);
-			})
-			.attr("y2", function(d){
-				return yScale(d.duration);
-			})
-			.attr("stroke-width", 2)
-			.attr("stroke", "black")
-			.on("mouseover", function(d){
-			//	console.log(xScale.rangeBand())
-				var xPosition = d3.event.pageX-30;
-				var yPosition = d3.event.pageY-30;
-				console.log(xPosition+"/"+ yPosition)
-				d3.select("#tooltip")//.transition().duration(200)
-						.style("opacity", .9)
-				.style("left", xPosition+"px")
-						.style("top", yPosition+"px")
-						.select("#value")
-						.text(d.duration);
-				d3.select("#tooltip").classed("hidden", false);
-			})
-			.on("mouseout", function(d){
-				d3.select("#tooltip").classed("hidden", true);
-
-//				.transition()
-//						.duration(500)
-//						.style("opacity", 0)
-			})
+//d3.select(window).on('resize', resize);
 //
-//
-			svgObj.append("g").selectAll("rect")
-			.data(dataSet)
-			.enter()
-			.append("rect")
-			.attr("x" , function(d){
-						return xScale(d.date);
-			})
-			.attr("y" , function(d){
-						return yScale(d.duration)-5;
-			})
-			.attr("width" , function(d) {
-						return 2;
-			})
-			.attr("height" , function(d) {
-				return 10;
-			});
-
-			svgObj.append("g").selectAll("rect")
-			.data(dataSet)
-			.enter()
-			.append("rect")
-			.attr("x" , function(d){
-				var dateTemp = new Date(d.date.getTime());
-				dateTemp.setSeconds(dateTemp.getSeconds()+ d.duration);
-				return xScale(dateTemp);
-			})
-			.attr("y" , function(d){
-				return yScale(d.duration)-5;
-			})
-			.attr("width" , function(d) {
-				return 2;
-			})
-			.attr("height" , function(d) {
-				return 10;
-			})
+//function resize() {
+//	console.log($("#chart2"))
+//	console.log("resize..........:" +graphD3Obj.svgWidth);
+//	graphD3Obj.svgWidth = parseInt($("#chart2").find(".d3Graph").css("width"), 10) - (graphD3Obj.svgMargin.left + graphD3Obj.svgMargin.right);
+//	graphD3Obj.svgHeight = parseInt($("#chart2").find(".d3Graph").css("height"), 10) - (graphD3Obj.svgMargin.top + graphD3Obj.svgMargin.bottom);
+//	console.log($("#chart2").find(".d3Graph").css("width")+" ---- : "+ graphD3Obj.svgWidth +"-"+ graphD3Obj.svgHeight);
+//	
+//	graphD3Obj.xScale.range([0, graphD3Obj.svgWidth]); 
+//	
+//	$("#chart2").find("svg").attr("width", 300);
+//	$("#chart2").find("svg").attr("height", 250);
+//}
 
 
+function responsivefy(svg) {
+	console.log("#### responsivefy");
+	console.log(svg);
+	console.log(svg.node().parentNode)
+	//return; 
+    // get container + svg aspect ratio
+    var container = d3.select(svg.node().parentNode),
+        width = parseInt(svg.style("width")),
+        height = parseInt(svg.style("height")),
+        aspect = width / height;
+	console.log(width+"/"+ height)
+    // add viewBox and preserveAspectRatio properties,
+    // and call resize so that svg resizes on inital page load
+   svg.attr("viewBox", "0 0 " + width + " " + height)
+        //.attr("perserveAspectRatio", "xMinYMid")
+        svg.call(resize);
 
+    // to register multiple listeners for same event type, 
+    // you need to add namespace, i.e., 'click.foo'
+    // necessary if you call invoke this function for multiple svgs
+    // api docs: https://github.com/mbostock/d3/wiki/Selections#on
+    console.log("resize." + container.attr("id"));
+    d3.select(window).on("resize." + container.attr("id"), resize);
 
-
-	svgObj.append("g")
-			.attr("class", "grid")
-			.attr("transform", "translate(0," + svgHeight + ")")
-			.call(d3.svg.axis()
-					.scale(xScale)
-					.orient("bottom")
-					.tickSize(-svgHeight, 0, 0)
-					.tickFormat("")
-
-	)
-
-	svgObj.append("g")
-			.attr("class", "grid")
-			.call( d3.svg.axis()
-					.scale(yScale)
-					.orient("left")
-					.tickSize(-svgWidth, 0, 0)
-					.tickFormat("")
-//http://www.d3noob.org/2013/01/adding-grid-lines-to-d3js-graph.html
-	)
-
-
-	//2.enter()
-	//3.transition()
-	//4.duration()
-	//set Event
-
+    // get width of container and resize svg to fit it
+    function resize() {
+    	console.log("------:resize: "+ svg+"/"+ container.attr("id"))
+        var targetWidth = parseInt(container.style("width"));
+    	console.log(targetWidth);
+        svg.attr("width", targetWidth);
+        svg.attr("height", Math.round(targetWidth / aspect));
+    }
 }
-
+//http://www.brendansudol.com/posts/responsive-d3/
 function d3Test2(){	
 	var chartId = "chart2";
+	//$("#"+chartId).append("<div class='d3Graph'></div>");
+	
 	var svgMargin =  {
 		top: 20,
 		right: 20,
-		bottom: 20,
-		left: 20,
+		bottom: 30,
+		left: 30
 	};
-	var svgObj = graphD3Obj.graphSvgCreate(chartId, svgMargin);
 	
 	var url = "./getData.json";
 	d3.json(url, function(error, jsonData){
-		console.log(jsonData)
+		//console.log(jsonData)
 		var rsList = jsonData;//JSON.parse(jsonData);
 		var hits = rsList.hits;
 		var total = hits.total;
-		console.log("total: "+ total)
+		//console.log("total: "+ total)
 		var hitsOfHits = hits.hits;
 		var dataLength = hitsOfHits.length;
-		console.log("data count "+dataLength);
+		//console.log("data count "+dataLength);
 		
 		var dataSet = [];
 		var format = d3.time.format("%Y%m%d%H%M%S");
@@ -230,28 +78,90 @@ function d3Test2(){
 			var _source = data._source;
 			var report_time  = _source.report_time;
 			var duration = _source.duration;
-			console.log(report_time)
-			
+
 			var reportTimeStart = new Date(format.parse(report_time).getTime());
 			var reportTimeEnd = new Date(format.parse(report_time).getTime());
 			reportTimeEnd.setSeconds(reportTimeEnd.getSeconds()+duration);
 	
 			var yValue = Math.floor((Math.random())*dataLength)+1;
-			console.log(yValue+" ####: "+ format2(reportTimeStart)+"/duration: "+duration+"==>"+ format2(reportTimeEnd));
-		//	console.log(i+"/"+report_time+"/"+format.parse(report_time)+"/"+ duration+"/"+ yValue)
 			var item = {"reportTimeStart":reportTimeStart, "reportTimeEnd": reportTimeEnd, "duration":duration, "yValue":yValue};
 			dataSet.push(item);
 		})
-
+		
+		var svgObj = graphD3Obj.graphSvgCreate(chartId, svgMargin);
+		svgObj.call(responsivefy)
+		
+		//scale
 		graphD3Obj.xScaleSet(dataSet, "reportTimeStart", "reportTimeEnd");
 		graphD3Obj.yScaleSet(0, dataLength);
 		
+		//axis
+		var xAxis = d3.svg.axis()
+			.scale(graphD3Obj.xScale)
+			.tickSize(-graphD3Obj.svgHeight) //***
+			.tickPadding(10)
+			.tickSubdivide(true)
+			.orient("bottom");
+		console.log(graphD3Obj.svgHeight+"/"+ graphD3Obj.svgWidth)
+		var yAxis = d3.svg.axis()
+					.scale(graphD3Obj.yScale)
+					.tickPadding(10)
+					.tickSize(-graphD3Obj.svgWidth)
+					.tickSubdivide(true)
+					.orient("left");
+
 		
-		svgObj.append("g").selectAll("line")
-		.data(dataSet)
-		.enter()
-		.append("line")
-		.attr("x1", function(d){
+//		var line = d3.svg.line()
+//				.interpolate("step-after")
+//				.x1(function(d){graphD3Obj.xScale(d.reportTimeStart)})
+//				.y1(function(d){graphD3Obj.xScale(d.yValue)})
+//				.x2(function(d){graphD3Obj.xScale(d.reportTimeEnd)})
+//				.y2(function(d){graphD3Obj.xScale(d.yValue)})
+//				
+				
+
+		
+		
+		var zoom = d3.behavior.zoom().scaleExtent([1, 10])
+					.x(graphD3Obj.xScale)
+					.y(graphD3Obj.yScale)
+					.on("zoom", function(){
+						zoomedTest(svgObj, xAxis, yAxis, line)
+					})
+
+		
+		var tempObj = svgObj.append("g").attr("transform", "translate(" + graphD3Obj.svgMargin.left + "," + graphD3Obj.svgMargin.top + ")")
+		svgObj.call(zoom);
+
+
+		
+		
+		
+		
+		//x축
+		tempObj.append("g")
+				.attr("class", "x axis")
+				.attr("transform", "translate(0,"+ graphD3Obj.svgHeight+")")
+				.call(xAxis)
+//		
+//		//y축
+//		/**/
+//		svgObj.append("g")
+//		.attr("class", "y axis")
+//		//.attr("transform", "translate("+0+", 0)")
+//		.call(yAxis)
+//		
+//		
+		var toolTipDiv = d3.select("body")
+						.append("div") 
+						.attr("class", "tooltip")
+						
+		//line draw
+		tempObj.append("g").selectAll("line")
+			.data(dataSet)
+			.enter()
+			.append("line")
+			.attr("x1", function(d){
 			//console.log(d)
 			return graphD3Obj.xScale(d.reportTimeStart);
 		})
@@ -264,27 +174,34 @@ function d3Test2(){
 		.attr("y2", function(d){
 			return graphD3Obj.yScale(d.yValue);
 		})
-		.attr("stroke-width", 1)
+		.attr("stroke-width", 3)
 		.attr("stroke", "black")
-
-		
-		var dataMin = d3.min(dataSet, function(d){
-			return d["reportTimeStart"];
+		.on("mouseover", function(d){
+			toolTipDiv.html(d.duration)
+					.transition()
+					.duration(500)
+					.style("opacity", 0.9)
+					.style("display", "block")
+		})
+		.on("mousemove", function(){
+			toolTipDiv.style("left", (d3.event.pageX) + "px")
+					.style("top", (d3.event.pageY - 15) + "px")
+		})
+		.on("mouseout", function(){
+			toolTipDiv.transition()
+					.duration(500)
+					.style("opacity", 0)
+					.style("display", "none")
 		});
 		
-		var dataMax = d3.max(dataSet, function(d){
-			return d["reportTimeEnd"];
-		});
 		
-		//x1 막대
-		svgObj.append("g").selectAll("rect")
+			
+		//rect draw - x1 막대
+		tempObj.append("g").selectAll("rect")
 			.data(dataSet)
 			.enter()
 			.append("rect")
 			.attr("x" , function(d){
-				console.log(graphD3Obj.xScale(d.reportTimeStart)+"**"+graphD3Obj.xScale(dataMin))
-				 
-				
 				return graphD3Obj.xScale(d.reportTimeStart);
 			})
 			.attr("y" , function(d){
@@ -295,10 +212,27 @@ function d3Test2(){
 			})
 			.attr("height" , function(d) {
 				return 10;
+			})
+			.on("mouseover", function(d){
+				toolTipDiv.html(d.duration)
+						.transition()
+						.duration(500)
+						.style("opacity", 0.9)
+						.style("display", "block")
+			})
+			.on("mousemove", function(){
+				toolTipDiv.style("left", (d3.event.pageX) + "px")
+						.style("top", (d3.event.pageY - 15) + "px")
+			})
+			.on("mouseout", function(){
+				toolTipDiv.transition()
+						.duration(500)
+						.style("opacity", 0)
+						.style("display", "none")
 			});
 		
-		//x2 막대기 
-		svgObj.append("g").selectAll("rect")
+		//rect draw - x2 막대
+		tempObj.append("g").selectAll("rect")
 			.data(dataSet)
 			.enter()
 			.append("rect")
@@ -314,86 +248,104 @@ function d3Test2(){
 			.attr("height" , function(d) {
 				return 10;
 			})
-		
-			
-		var temp = d3.time.format("%Y-%m-%d %H:%M");
-		
-		var customTimeFormat = d3.time.format.multi([
-		                                             [".%L", function(d) { return d.getMilliseconds(); }],
-		                                             [":%S", function(d) { return d.getSeconds(); }],
-		                                             ["%I:%M", function(d) { return d.getMinutes(); }],
-		                                             ["%I %p", function(d) { return d.getHours(); }],
-		                                             ["%a %d", function(d) { return d.getDay() && d.getDate() != 1; }],
-		                                             ["%b %d", function(d) { return d.getDate() != 1; }],
-		                                             ["%B", function(d) { return d.getMonth(); }],
-		                                             ["%Y", function() { return true; }]
-		                                           ]); 
-		
-		var xAxis = d3.svg.axis()
-					.scale(graphD3Obj.xScale)
-					.orient("bottom")
-					//.ticks(d3.time.hour, 4)
-					//.tickSize(-graphD3Obj.svgHeight, 0, 0)
-					 //.tickFormat(customTimeFormat);
-		
-		var yAxis = d3.svg.axis()
-					.scale(graphD3Obj.yScale)
-					.orient("left");
-		
-		//console.log("/"+ graphD3Obj.svgWidth+"/"+ graphD3Obj.svgHeight)
+			.on("mouseover", function(d){
+				toolTipDiv.html(d.duration)
+						.transition()
+						.duration(500)
+						.style("opacity", 0.9)
+						.style("display", "block")
+			})
+			.on("mousemove", function(){
+				toolTipDiv.style("left", (d3.event.pageX) + "px")
+						.style("top", (d3.event.pageY - 15) + "px")
+			})
+			.on("mouseout", function(){
+				toolTipDiv.transition()
+						.duration(500)
+						.style("opacity", 0)
+						.style("display", "none")
+			});
 		
 		//x축 label text
-		svgObj.append("g")
-			.attr("class", "x axis")
-			.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
-			.call(xAxis)
-			.append("text")
-			.attr("class", "label")
-			.attr("x", graphD3Obj.svgWidth)
-			.attr("y", -20)
-			.style("text-anchor", "end")
-			.text("duration");
-		
-		//y축 label text
-//		svgObj.append("g")
-//			.attr("class", "y axis")
-//			.call(yAxis)
+//		tempObj.append("g")
+//			.attr("class", "x axis")
+//			.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
+//			.call(xAxis)
 //			.append("text")
 //			.attr("class", "label")
-//			.attr("transform", "rotate(-90)")
-//			.attr("x", 0)
-//			.attr("y", 15)
-//			//.attr("dy", ".71em")
+//			.attr("x", graphD3Obj.svgWidth)
+//			.attr("y", -10)
 //			.style("text-anchor", "end")
-//			.text("testttt")
-
-	
-		
+//			.text("duration"); 
 			
-		//x축 GRID	
-		svgObj.append("g")
-				.attr("class", "grid")
-				.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
-				.call(d3.svg.axis()
-				.scale(graphD3Obj.xScale)
-				.orient("bottom")
-				.tickSize(-graphD3Obj.svgHeight, 0, 0)
-//				
-//				
-//				
-//				//.ticks(10)
-				.tickFormat("")
-		)
+		//y축 label text
+		/*
+		tempObj.append("g")
+			.attr("class", "y axis")
+			.call(yAxis)
+			.append("text")
+			.attr("class", "label")
+			.attr("transform", "rotate(-90)")
+			.attr("x", 0)
+			.attr("y", 15)
+			//.attr("dy", ".71em")
+			.style("text-anchor", "end")
+			.text("y label")
+		*/
 		
+		//x축 GRID	
+//		tempObj.append("g")
+//				.attr("class", "grid")
+//				.attr("transform", "translate(0," + graphD3Obj.svgHeight + ")")
+//				.call(d3.svg.axis()
+//					.scale(graphD3Obj.xScale)
+//					.orient("bottom")
+//					.tickSize(-graphD3Obj.svgHeight, 0, 0)
+//					.tickFormat("")
+//				)
 		
 	})
 }
+function test(){
+	console.log("@@@")
+}
 
-
-
-
-
+function zoomedTest(svgObj, xAxis, yAxis, line){
+	console.log("@@@@ ZOOMED:  ")
+	console.log(svgObj.select(".x.axis"))
+	svgObj.select(".x.axis").call(xAxis);
+//	svgObj.select(".y.axis").call(yAxis);
+	//svgObj.select("path.line").attr("d", line);
+	
+	//svgObj.attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")");
+}
 
 
 //todo data call
 //d3.json(url, callback)
+var ajaxObj;
+function ajaxAbortTest(){
+	console.log("ajaxAbortTest.........")
+	var url = "ajaxAbortTest.json";
+	ajaxObj = $.ajax({
+		url: url,
+		dataType: 'text',
+		contentType: "application/json"
+	})
+		.done(function(data){
+			console.log("done: ");
+			console.log(data);
+		})
+		.error(function(err){
+			console.log(err);
+		})
+		.complete(function(){
+			console.log("complete")
+		})
+	
+}
+
+function ajaxCallAbort(){
+	ajaxObj.abort();
+	console.log("cancel ajaxCall")
+}

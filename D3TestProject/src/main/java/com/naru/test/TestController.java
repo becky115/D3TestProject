@@ -36,4 +36,16 @@ public class TestController {
 		return rootNode.toString();
 	}
 	
+	
+	@RequestMapping("ajaxAbortTest.json")
+	public @ResponseBody String ajaxAbort() throws InterruptedException{
+		String message = "ajaxCall_Fail";
+		System.out.println("ajaxAbort.......:"+ message);
+		
+		Thread.sleep(10000);
+		message = "ajaxCall_Success";
+		System.out.println("ajaxAbort.......:"+message);
+		return message;
+	}
+	
 }

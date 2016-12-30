@@ -6362,6 +6362,7 @@
         o = links[i];
         if (typeof o.source == "number") o.source = nodes[o.source];
         if (typeof o.target == "number") o.target = nodes[o.target];
+        console.log(o);
         ++o.source.weight;
         ++o.target.weight;
       }
